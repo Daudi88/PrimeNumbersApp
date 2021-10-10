@@ -1,22 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace PrimeNumbersApp
 {
-    class PrimeNumbers
+    public class PrimeNumbers
     {
         /// <summary>
-        /// A list to hold all prime numbers. I chose a 
-        /// list since it's easy to add to it.
+        /// A list to hold all prime numbers.
         /// </summary>
-        public List<int> DataStructure { get; set; }
-        const int TimeToSleep = 2000;
+        private static List<int> primeNumbers = new();
 
-        public PrimeNumbers()
-        {
-            DataStructure = new();
-        }
+        /// <summary>
+        /// The time to pause the thread in milliseconds.
+        /// </summary>
+        const int TimeToSleep = 2000;
 
         /// <summary>
         /// A main menu that gives the user 4 choices. 
@@ -37,25 +37,32 @@ namespace PrimeNumbersApp
                 Console.WriteLine("\t3. Add next prime number");
                 Console.WriteLine("\t4. Exit program");
                 Console.Write("\t> ");
-                int.TryParse(Console.ReadLine(), out var choice);
-
-                switch (choice)
+                if (int.TryParse(Console.ReadLine(), out var choice))
                 {
-                    case 1:
-                        AddNumber();
-                        break;
-                    case 2:
-                        PrintStructure();
-                        break;
-                    case 3:
-                        AddNextPrimeNumber();
-                        break;
-                    case 4:
-                        exit = true;
-                        break;
-                    default:
-                        ErrorMessage();
-                        break;
+                    switch (choice)
+                    {
+                        case 1:
+                            AddPrimeNumber();
+                            break;
+                        case 2:
+                            PrintStructure();
+                            break;
+                        case 3:
+                            AddNextPrimeNumber();
+                            break;
+                        case 4:
+                            exit = true;
+                            break;
+                        default:
+                            Console.Write("\tInvalid choice. Try a " +
+                                "number between 1-4.");
+                            Thread.Sleep(TimeToSleep);
+                            break;
+                    }
+                }
+                else
+                {
+                    ErrorMessage();
                 }
             }
         }
@@ -66,30 +73,32 @@ namespace PrimeNumbersApp
         /// structure. If the user enters wrong input an error message will 
         /// be printed to the screen.
         /// </summary>
-        private void AddNumber()
+        private void AddPrimeNumber()
         {
             while (true)
             {
                 Console.Write("\n\tEnter a number: ");
                 if (int.TryParse(Console.ReadLine(), out var num))
                 {
-                    if (IsPrime(num))
+                    if (IsPrimeNumber(num))
                     {
-                        if (DataStructure.Contains(num))
+                        if (primeNumbers.Contains(num))
                         {
-                            Console.Write($"\tThe number {num} is already in the data structure...");
+                            Console.Write($"\tThe number {num} is already in " +
+                                $"the data structure...");
                         }
                         else
                         {
-                            DataStructure.Add(num);
-                            DataStructure.Sort();
+                            primeNumbers.Add(num);
                             Console.Write($"\tYey! The number {num} is a prime " +
                                 "number and is added to the data structure!");
+                            primeNumbers.Sort();
                         }
                     }
                     else
                     {
-                        Console.Write($"\tSorry! The number {num} is not a prime number...");
+                        Console.Write($"\tSorry! The number {num} is not a " +
+                            $"prime number...");
                     }
 
                     Thread.Sleep(TimeToSleep);
@@ -107,9 +116,14 @@ namespace PrimeNumbersApp
         /// Checks if <paramref name="num"/> is a prime number or not.
         /// </summary>
         /// <param name="num">The number to be checked.</param>
-        /// <returns><see langword="true"/> if the number is a prime number, otherwise <see langword="false"/>.</returns>
-        public static bool IsPrime(int num)
+        /// <returns><see langword="true"/> if the number is a prime number, 
+        /// otherwise <see langword="false"/>.</returns>
+        public static bool IsPrimeNumber(int num)
         {
+            // This algorithm I found on stack overflow but
+            // I have broken the steps down to understand it.
+            // https://stackoverflow.com/questions/62150130/algorithm-of-checking-if-the-number-is-prime
+
             // All numbers below 2 are not prime numbers.
             if (num <= 1) return false;
 
@@ -120,19 +134,19 @@ namespace PrimeNumbersApp
             // prime number.
             if (num % 2 == 0 || num % 3 == 0) return false;
 
-            // The numbers after 3 that aren't divisible by 2 or 3 up until 25
-            // (5, 7, 11, 13, 17, 19, 23) are all prime numbers so we dont have
-            // to check those. For all remaining numbers (starting at 25) we
-            // have to check if they are evenly divisible by any prime number
-            // other than 2 or 3 (since we already checked against them). We can
-            // check 'i * i' againt 'num' since at least one factor of the
-            // number needs to be smaller or equal to the square root of 'num'.
-            // I guess I could have used Math.Sqrt(num) but I read that
-            // multiplication was faster.
+            // To find if the number is a prime number we try to divide the
+            // number with other prime numbers. We have checked against 2 and 3
+            // so next number is 5. Any prime number > 3 is of the form 6k±1 
+            // for instance 5 (6*1-1) or 7 (6*1+1). If we apply this pattern we
+            // can check against two prime numbers every time around the for-loop.
+            // We can also check 'i * i' against 'num' since at least one factor
+            // of the number needs to be smaller or equal to the square root of
+            // 'num'. This could be written Math.Sqrt(num) but multiplication
+            // is supposed to be faster.
             for (int i = 5; i * i <= num; i += 6)
             {
                 // First time around 'i' is 5 and will cancel out numbers like
-                // 25, 35 and 55 but we also check againt 'i + 2' which the first
+                // 25, 35 and 55 but we also check against 'i + 2' which the first
                 // time is 7. This will cancel out numbers like 49, 77 and 91.
                 // Next time around we move 'i' 6 steps to the next two prime
                 // numbers 11 and 13 and so on. 'i' or 'i + 2' will this way always
@@ -147,15 +161,17 @@ namespace PrimeNumbersApp
             return true;
         }
 
+
+
         /// <summary>
-        /// Prints the whole data structure to the screen if there are any numbers, 
-        /// or prints that the data structure is empty to the screen.
+        /// Prints the whole data structure to the screen if there are any 
+        /// numbers, or prints that the data structure is empty to the screen.
         /// </summary>
         private void PrintStructure()
         {
-            if (DataStructure.Count > 0)
+            if (primeNumbers.Count > 0)
             {
-                Console.WriteLine("\n\t" + string.Join(", ", DataStructure));
+                Console.WriteLine("\n\t" + string.Join(", ", primeNumbers));
                 Console.Write("\tPress any key to continue...");
                 Console.ReadKey();
             }
@@ -172,30 +188,77 @@ namespace PrimeNumbersApp
         /// </summary>
         private void AddNextPrimeNumber()
         {
-            if (DataStructure.Count > 0)
-            {
-                // Isolates the largest prime number in the data structure.
-                var largest = DataStructure[^1];
+            var largest = GetLargestNumber(primeNumbers);
+            var nextPrime = NextPrimeNumber(largest);
 
-                // There will always be a prime number somewhere between 'largest' and 'largest * 2'.
-                for (int i = largest + 1; i < largest * 2; i++)
-                {
-                    if (IsPrime(i))
-                    {
-                        DataStructure.Add(i);
-                        Console.Write($"\n\tThe number {i} was added to the data structure!");
-                        break;
-                    }
-                }
+            // If nothing went wrong the next prime
+            // number is added to the data structure.
+            if (nextPrime != -1)
+            {
+                primeNumbers.Add(nextPrime);
+                Console.Write($"\n\tThe number {nextPrime} was added to the " +
+                    $"data structure!");
             }
             else
             {
-                // if the data structure is empty the first prime number will be added.
-                DataStructure.Add(2);
-                Console.Write($"\n\tThe number 2 was added to the data structure!");
+                Console.Write("Something went wrong. No number was added to " +
+                    "the data structure...");
             }
 
             Thread.Sleep(TimeToSleep);
+        }
+
+        /// <summary>
+        /// Finds the next prime number based on <paramref name="num"/>.
+        /// </summary>
+        /// <param name="num">A prime number.</param>
+        /// <returns>The next prime number.</returns>
+        public static int NextPrimeNumber(int num)
+        {
+            // If there are no previous prime numbers
+            // 2 is the next prime number.
+            if (num < 2) return 2;
+
+            // If 'num > 1' there is always at least one prime
+            // number p within this range 'num < p < 2num' but since
+            // we don't want to check if 'num' is prime we add 1 to
+            // 'num' in the for loop.
+            for (int i = (int)num + 1; i < 2 * num; i++)
+            {
+                if (IsPrimeNumber(i))
+                {
+                    return i;
+                }
+            }
+
+            // If something went wrong or the number is
+            // outside the scope of an integer we return -1.
+            return -1;
+        }
+
+        /// <summary>
+        /// Finds the largest number in a list of integers.
+        /// </summary>
+        /// <param name="list">A list of integers.</param>
+        /// <returns>The largest number or 0.</returns>
+        public static int GetLargestNumber(List<int> list)
+        {
+            var largest = 0;
+
+            if (list?.Count > 0)
+            {
+                // Checks the whole list and compares
+                // each number against 'largest'.
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i] > largest)
+                    {
+                        largest = list[i];
+                    }
+                }
+            }
+
+            return largest;
         }
 
         /// <summary>
@@ -206,6 +269,8 @@ namespace PrimeNumbersApp
             Console.Write("\tWrong type of input, requires a " +
                             "number, please try again.");
             Thread.Sleep(TimeToSleep);
+
+            // Erases previous written text.
             Console.SetCursorPosition(0, Console.CursorTop);
             for (int i = 0; i < 2; i++)
             {
